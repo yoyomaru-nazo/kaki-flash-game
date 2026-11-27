@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>柿か杮か？ 一瞬見分けクイズ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+    background: #1a1410;
+    color: #f5ead9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  h1 { font-size: 1.5rem; margin: 10px 0 4px; letter-spacing: .05em; }
+  .sub { color: #c9b18c; font-size: .9rem; margin-bottom: 18px; text-align: center; }
+  .card {
+    background: #2a2018;
+    border: 1px solid #4a3826;
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.45);
+  }
+  .status {
+    display: flex; justify-content: space-between;
+    font-size: .95rem; margin-bottom: 12px; color: #e8d5b5;
+  }
+  .status b { color: #ffb84d; font-size: 1.1rem; }
+  #stage {
+    background: #fdf6e9;
+    border-radius: 12px;
+    height: 240px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  #flashChar {
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+    font-size: 150px;
+    color: #26221e;
+    line-height: 1;
+    visibility: hidden;
+    user-select: none;
+  }
+  #stageMsg {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; color: #8a6d3b; font-weight: bold;
+    text-align: center; padding: 0 16px;
+  }
+  .choices { display: flex; gap: 12px; }
+  .choice {
+    flex: 1;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+    font-size: 64px;
+    padding: 10px 0 14px;
+    background: #3a2c1e;
+    color: #f5ead9;
+    border: 2px solid #6b5136;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform .08s, background .15s, border-color .15s;
+  }
+  .choice:hover:not(:disabled) { background: #4a3826; }
+  .choice:active:not(:disabled) { transform: scale(.97); }
+  .choice:disabled { opacity: .45; cursor: default; }
+  .choice.correct { border-color: #58c472; background: #274434; opacity: 1; }
+  .choice.wrong { border-color: #e0574f; background: #472b28; opacity: 1; }
+  #feedback { min-height: 3.2em; margin: 14px 0 4px; font-size: 1rem; line-height: 1.6; text-align: center; }
+  #feedback .ok { color: #7ddb96; font-weight: bold; }
+  #feedback .ng { color: #ff8d84; font-weight: bold; }
+  .settings { margin-top: 8px; border-top: 1px solid #4a3826; padding-top: 16px; }
+  .settings label { display: block; font-size: .95rem; margin-bottom: 8px; }
+  .settings label b { color: #ffb84d; }
+  input[type=range] { width: 100%; accent-color: #e8862e; height: 32px; }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .preset {
+    background: #3a2c1e; color: #e8d5b5; border: 1px solid #6b5136;
+    border-radius: 999px; padding: 6px 14px; font-size: .85rem; cursor: pointer;
+  }
+  .preset:hover { background: #4a3826; }
+  .scoreRule { font-size: .82rem; color: #c9b18c; margin-top: 10px; line-height: 1.5; }
+  .bigbtn {
+    display: block; width: 100%; margin-top: 16px;
+    background: #e8862e; color: #1a1410; font-weight: bold; font-size: 1.15rem;
+    border: none; border-radius: 12px; padding: 14px 0; cursor: pointer;
+  }
+  .bigbtn:hover { background: #f59a44; }
+  .bigbtn:disabled { opacity: .4; cursor: default; }
+  .howto { max-width: 480px; margin-top: 18px; font-size: .88rem; color: #c9b18c; line-height: 1.7; }
+  .howto .k { font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 1.15rem; color: #f5ead9; }
+</style>
+</head>
+<body>
+  <h1>柿か杮か？</h1>
+  <p class="sub">一瞬だけ表示される漢字を見分けるクイズ。全10問。<br>表示時間が短いほど高得点！</p>
+
+  <div class="card">
+    <div class="status">
+      <span>問題 <b id="qNum">-</b> / 10</span>
+      <span>スコア <b id="score">0</b></span>
+      <span>連続正解 <b id="streak">0</b></span>
+    </div>
+
+    <div id="stage">
+      <div id="flashChar">柿</div>
+      <div id="stageMsg">下の設定を決めて「ゲームスタート」</div>
+    </div>
+
+    <div class="choices">
+      <button class="choice" id="btnKaki" disabled>柿</button>
+      <button class="choice" id="btnKokera" disabled>杮</button>
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="settings">
+      <label>表示時間： <b id="msLabel">500</b> ミリ秒（この設定だと正解で <b id="ptsLabel">80</b> 点）</label>
+      <input type="range" id="msSlider" min="50" max="2000" step="50" value="500">
+      <div class="presets">
+        <button class="preset" data-ms="100">激ムズ 100ms</button>
+        <button class="preset" data-ms="300">ムズい 300ms</button>
+        <button class="preset" data-ms="700">普通 700ms</button>
+        <button class="preset" data-ms="1500">ゆっくり 1500ms</button>
+      </div>
+      <p class="scoreRule">得点ルール：正解すると「(2100 − 表示ミリ秒) ÷ 20」点（切り上げ）。100msなら100点、2000msなら5点。不正解は0点。途中で表示時間を変えてもOK。</p>
+    </div>
+
+    <button class="bigbtn" id="startBtn">ゲームスタート</button>
+  </div>
+
+  <div class="howto">
+    <p>見分け方のコツ：<span class="k">柿</span>（かき・果物）は右側の上部が「点＋横棒」で離れていて、<span class="k">杮</span>（こけら）は横棒が一本で貫かれている。明朝体だと分かりやすい。</p>
+  </div>
+
+<script>
+  const TOTAL = 10;
+  const slider = document.getElementById('msSlider');
+  const msLabel = document.getElementById('msLabel');
+  const ptsLabel = document.getElementById('ptsLabel');
+  const flashChar = document.getElementById('flashChar');
+  const stageMsg = document.getElementById('stageMsg');
+  const qNum = document.getElementById('qNum');
+  const scoreEl = document.getElementById('score');
+  const streakEl = document.getElementById('streak');
+  const feedback = document.getElementById('feedback');
+  const startBtn = document.getElementById('startBtn');
+  const btnKaki = document.getElementById('btnKaki');
+  const btnKokera = document.getElementById('btnKokera');
+
+  let score = 0, streak = 0, current = 0, answer = null, playing = false, accepting = false;
+
+  function pointsFor(ms) { return Math.ceil((2100 - ms) / 20); }
+  function currentMs() { return parseInt(slider.value, 10); }
+
+  function refreshSetting() {
+    msLabel.textContent = currentMs();
+    ptsLabel.textContent = pointsFor(currentMs());
+  }
+  slider.addEventListener('input', refreshSetting);
+  document.querySelectorAll('.preset').forEach(b => {
+    b.addEventListener('click', () => { slider.value = b.dataset.ms; refreshSetting(); });
+  });
+  refreshSetting();
+
+  function setChoicesEnabled(on) {
+    btnKaki.disabled = !on;
+    btnKokera.disabled = !on;
+  }
+  function clearChoiceMarks() {
+    btnKaki.classList.remove('correct', 'wrong');
+    btnKokera.classList.remove('correct', 'wrong');
+  }
+
+  function nextQuestion() {
+    current++;
+    if (current > TOTAL) { finishGame(); return; }
+    qNum.textContent = current;
+    clearChoiceMarks();
+    setChoicesEnabled(false);
+    feedback.innerHTML = '';
+    answer = Math.random() < 0.5 ? '柿' : '杮';
+    flashChar.textContent = answer;
+    stageMsg.textContent = 'よーい…';
+    flashChar.style.visibility = 'hidden';
+    setTimeout(() => {
+      stageMsg.textContent = '';
+      flashChar.style.visibility = 'visible';
+      setTimeout(() => {
+        flashChar.style.visibility = 'hidden';
+        stageMsg.textContent = 'どっちだった？';
+        accepting = true;
+        setChoicesEnabled(true);
+      }, currentMs());
+    }, 700);
+  }
+
+  function choose(pick) {
+    if (!accepting) return;
+    accepting = false;
+    setChoicesEnabled(false);
+    const correctBtn = answer === '柿' ? btnKaki : btnKokera;
+    const pickedBtn = pick === '柿' ? btnKaki : btnKokera;
+    correctBtn.classList.add('correct');
+    if (pick === answer) {
+      const pts = pointsFor(currentMs());
+      score += pts; streak++;
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+      feedback.innerHTML = '<span class="ok">正解！</span>「' + answer + '」でした。+' + pts + '点';
+    } else {
+      pickedBtn.classList.add('wrong');
+      streak = 0;
+      streakEl.textContent = streak;
+      feedback.innerHTML = '<span class="ng">残念…</span>正解は「' + answer + '」でした。上の部分をよく見て！';
+    }
+    stageMsg.textContent = '';
+    flashChar.textContent = answer;
+    flashChar.style.visibility = 'visible';
+    setTimeout(nextQuestion, 1400);
+  }
+  btnKaki.addEventListener('click', () => choose('柿'));
+  btnKokera.addEventListener('click', () => choose('杮'));
+
+  function finishGame() {
+    playing = false;
+    qNum.textContent = '-';
+    flashChar.style.visibility = 'hidden';
+    setChoicesEnabled(false);
+    let msg;
+    if (score >= 800) msg = '神の目！ほぼ見えてないはずなのに…';
+    else if (score >= 500) msg = 'すごい！目が鍛えられてる。';
+    else if (score >= 300) msg = 'いい線！表示時間を短くして再挑戦しよう。';
+    else msg = 'まずはゆっくり設定で見分け方を覚えよう。';
+    stageMsg.innerHTML = '終了！ スコア ' + score + ' 点';
+    feedback.innerHTML = msg;
+    startBtn.textContent = 'もう一度遊ぶ';
+    startBtn.disabled = false;
+  }
+
+  startBtn.addEventListener('click', () => {
+    score = 0; streak = 0; current = 0;
+    scoreEl.textContent = '0';
+    streakEl.textContent = '0';
+    playing = true;
+    startBtn.disabled = true;
+    startBtn.textContent = 'プレイ中…';
+    nextQuestion();
+  });
+</script>
+</body>
+</html>
