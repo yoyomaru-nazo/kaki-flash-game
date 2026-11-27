@@ -149,7 +149,7 @@
         <button class="preset" data-target="crossSlider" data-ms="1500">普通 1500ms</button>
         <button class="preset" data-target="crossSlider" data-ms="2500">ゆっくり 2500ms</button>
       </div>
-      <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。連続正解ボーナス：2連続目から（連続数 − 1）× 5 点が加算されます（10連続全問正解ならボーナス合計225点）。フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。</p>
+      <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。連続正解ボーナス：基本点 × 10% ×（連続数 − 1）（四捨五入）が加算されます。10連続目は基本点の+90%で、全問正解なら総合計は基本点合計の1.45倍になります。フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。</p>
     </div>
 
     <button class="bigbtn" id="startBtn">ゲームスタート</button>
@@ -354,7 +354,7 @@
       streak++;
       if (streak > maxStreak) maxStreak = streak;
       const base = currentPoints();
-      const bonus = (streak - 1) * 5; // 連続正解ボーナス
+      const bonus = Math.round(base * 0.1 * (streak - 1)); // 連続正解ボーナス（基本点連動）
       const pts = base + bonus;
       score += pts;
       scoreEl.textContent = score;
