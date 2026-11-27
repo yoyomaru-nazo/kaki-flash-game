@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>柿か杮か？ 一瞬見分けクイズ</title>
+<title>柿か杮か？ 扉の隙間クイズ</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -32,6 +32,25 @@
     font-size: .95rem; margin-bottom: 12px; color: #e8d5b5;
   }
   .status b { color: #ffb84d; font-size: 1.1rem; }
+  .settings { border-top: 1px solid #4a3826; padding-top: 16px; }
+  .settings label { display: block; font-size: .95rem; margin-bottom: 8px; }
+  .settings label b { color: #ffb84d; }
+  input[type=range] { width: 100%; accent-color: #e8862e; height: 32px; }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .preset {
+    background: #3a2c1e; color: #e8d5b5; border: 1px solid #6b5136;
+    border-radius: 999px; padding: 6px 14px; font-size: .85rem; cursor: pointer;
+  }
+  .preset:hover { background: #4a3826; }
+  .scoreRule { font-size: .82rem; color: #c9b18c; margin-top: 10px; line-height: 1.5; }
+  .scoreRule b { color: #ffb84d; }
+  .bigbtn {
+    display: block; width: 100%; margin: 16px 0;
+    background: #e8862e; color: #1a1410; font-weight: bold; font-size: 1.15rem;
+    border: none; border-radius: 12px; padding: 14px 0; cursor: pointer;
+  }
+  .bigbtn:hover { background: #f59a44; }
+  .bigbtn:disabled { opacity: .4; cursor: default; }
   #stage {
     background: #fdf6e9;
     border-radius: 12px;
@@ -53,7 +72,6 @@
   }
   #slitLayer {
     position: absolute; inset: 0;
-    display: none;
     z-index: 2;
     pointer-events: none;
   }
@@ -93,38 +111,13 @@
   #feedback { min-height: 3.2em; margin: 14px 0 4px; font-size: 1rem; line-height: 1.6; text-align: center; }
   #feedback .ok { color: #7ddb96; font-weight: bold; }
   #feedback .ng { color: #ff8d84; font-weight: bold; }
-  .settings { margin-top: 8px; border-top: 1px solid #4a3826; padding-top: 16px; }
-  .modeToggle { display: flex; gap: 8px; margin-bottom: 16px; }
-  .modeBtn {
-    flex: 1; padding: 10px 0; font-size: .95rem; font-weight: bold;
-    background: #3a2c1e; color: #c9b18c; border: 2px solid #6b5136;
-    border-radius: 10px; cursor: pointer;
-  }
-  .modeBtn.active { background: #e8862e; color: #1a1410; border-color: #e8862e; }
-  .settings label { display: block; font-size: .95rem; margin-bottom: 8px; }
-  .settings label b { color: #ffb84d; }
-  input[type=range] { width: 100%; accent-color: #e8862e; height: 32px; }
-  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-  .preset {
-    background: #3a2c1e; color: #e8d5b5; border: 1px solid #6b5136;
-    border-radius: 999px; padding: 6px 14px; font-size: .85rem; cursor: pointer;
-  }
-  .preset:hover { background: #4a3826; }
-  .scoreRule { font-size: .82rem; color: #c9b18c; margin-top: 10px; line-height: 1.5; }
-  .bigbtn {
-    display: block; width: 100%; margin-top: 16px;
-    background: #e8862e; color: #1a1410; font-weight: bold; font-size: 1.15rem;
-    border: none; border-radius: 12px; padding: 14px 0; cursor: pointer;
-  }
-  .bigbtn:hover { background: #f59a44; }
-  .bigbtn:disabled { opacity: .4; cursor: default; }
   .howto { max-width: 480px; margin-top: 18px; font-size: .88rem; color: #c9b18c; line-height: 1.7; }
   .howto .k { font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 1.15rem; color: #f5ead9; }
 </style>
 </head>
 <body>
   <h1>柿か杮か？</h1>
-  <p class="sub">一瞬だけ見える漢字を見分けるクイズ。全10問。<br>難しい設定ほど高得点！</p>
+  <p class="sub">扉の隙間を右から左へ通り抜ける漢字を見分けるクイズ。全10問。<br>狭く・速くするほど高得点！</p>
 
   <div class="card">
     <div class="status">
@@ -133,13 +126,35 @@
       <span>連続正解 <b id="streak">0</b></span>
     </div>
 
+    <div class="settings">
+      <label>扉の隙間の幅： <b id="gapLabel">70</b> px</label>
+      <input type="range" id="gapSlider" min="30" max="150" step="5" value="70">
+      <div class="presets">
+        <button class="preset" data-target="gapSlider" data-ms="30">激狭 30px</button>
+        <button class="preset" data-target="gapSlider" data-ms="50">狭い 50px</button>
+        <button class="preset" data-target="gapSlider" data-ms="70">普通 70px</button>
+        <button class="preset" data-target="gapSlider" data-ms="120">広い 120px</button>
+      </div>
+      <label style="margin-top:14px">通り抜ける速さ（横切り時間）： <b id="crossLabel">1500</b> ミリ秒</label>
+      <input type="range" id="crossSlider" min="400" max="3000" step="100" value="1500">
+      <div class="presets">
+        <button class="preset" data-target="crossSlider" data-ms="400">激速 400ms</button>
+        <button class="preset" data-target="crossSlider" data-ms="800">速い 800ms</button>
+        <button class="preset" data-target="crossSlider" data-ms="1500">普通 1500ms</button>
+        <button class="preset" data-target="crossSlider" data-ms="2500">ゆっくり 2500ms</button>
+      </div>
+      <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。</p>
+    </div>
+
+    <button class="bigbtn" id="startBtn">ゲームスタート</button>
+
     <div id="stage">
       <div id="flashChar">柿</div>
       <div id="slitLayer">
         <div class="door left"></div>
         <div class="door right"></div>
       </div>
-      <div id="stageMsg">下の設定を決めて「ゲームスタート」</div>
+      <div id="stageMsg">設定を決めて「ゲームスタート」</div>
     </div>
 
     <div class="choices">
@@ -148,49 +163,6 @@
     </div>
 
     <div id="feedback"></div>
-
-    <div class="settings">
-      <div class="modeToggle">
-        <button class="modeBtn active" id="modeFlash">一瞬表示モード</button>
-        <button class="modeBtn" id="modeSlit">扉の隙間モード</button>
-      </div>
-
-      <div id="flashSettings">
-        <label>表示時間： <b id="msLabel">500</b> ミリ秒（この設定だと正解で <b id="ptsLabel">80</b> 点）</label>
-        <input type="range" id="msSlider" min="50" max="2000" step="50" value="500">
-        <div class="presets">
-          <button class="preset" data-target="msSlider" data-ms="100">激ムズ 100ms</button>
-          <button class="preset" data-target="msSlider" data-ms="300">ムズい 300ms</button>
-          <button class="preset" data-target="msSlider" data-ms="700">普通 700ms</button>
-          <button class="preset" data-target="msSlider" data-ms="1500">ゆっくり 1500ms</button>
-        </div>
-        <p class="scoreRule">得点ルール：正解すると「(2100 − 表示ミリ秒) ÷ 20」点（切り上げ）。100msなら100点、2000msなら5点。不正解は0点。</p>
-      </div>
-
-      <div id="slitSettings" style="display:none">
-        <label>扉の隙間の幅： <b id="gapLabel">70</b> px</label>
-        <input type="range" id="gapSlider" min="30" max="150" step="5" value="70">
-        <div class="presets">
-          <button class="preset" data-target="gapSlider" data-ms="30">激狭 30px</button>
-          <button class="preset" data-target="gapSlider" data-ms="50">狭い 50px</button>
-          <button class="preset" data-target="gapSlider" data-ms="70">普通 70px</button>
-          <button class="preset" data-target="gapSlider" data-ms="120">広い 120px</button>
-        </div>
-        <label style="margin-top:14px">通り抜ける速さ（横切り時間）： <b id="crossLabel">1500</b> ミリ秒</label>
-        <input type="range" id="crossSlider" min="400" max="3000" step="100" value="1500">
-        <div class="presets">
-          <button class="preset" data-target="crossSlider" data-ms="400">激速 400ms</button>
-          <button class="preset" data-target="crossSlider" data-ms="800">速い 800ms</button>
-          <button class="preset" data-target="crossSlider" data-ms="1500">普通 1500ms</button>
-          <button class="preset" data-target="crossSlider" data-ms="2500">ゆっくり 2500ms</button>
-        </div>
-        <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。</p>
-      </div>
-
-      <p class="scoreRule">共通：フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。途中で設定を変えてもOK。</p>
-    </div>
-
-    <button class="bigbtn" id="startBtn">ゲームスタート</button>
   </div>
 
   <div class="howto">
@@ -204,18 +176,11 @@
   const slitLayer = document.getElementById('slitLayer');
   const doorLeft = slitLayer.querySelector('.door.left');
   const doorRight = slitLayer.querySelector('.door.right');
-  const msSlider = document.getElementById('msSlider');
-  const msLabel = document.getElementById('msLabel');
-  const ptsLabel = document.getElementById('ptsLabel');
+  const gapSlider = document.getElementById('gapSlider');
+  const gapLabel = document.getElementById('gapLabel');
   const crossSlider = document.getElementById('crossSlider');
   const crossLabel = document.getElementById('crossLabel');
   const crossPtsLabel = document.getElementById('crossPtsLabel');
-  const gapSlider = document.getElementById('gapSlider');
-  const gapLabel = document.getElementById('gapLabel');
-  const flashSettings = document.getElementById('flashSettings');
-  const slitSettings = document.getElementById('slitSettings');
-  const modeFlashBtn = document.getElementById('modeFlash');
-  const modeSlitBtn = document.getElementById('modeSlit');
   const flashChar = document.getElementById('flashChar');
   const stageMsg = document.getElementById('stageMsg');
   const qNum = document.getElementById('qNum');
@@ -226,40 +191,15 @@
   const btnKaki = document.getElementById('btnKaki');
   const btnKokera = document.getElementById('btnKokera');
 
-  let mode = 'flash'; // 'flash' | 'slit'
   let score = 0, streak = 0, current = 0, answer = null, playing = false, accepting = false;
   let animId = null;
 
-  function pointsFlash(ms) { return Math.ceil((2100 - ms) / 20); }
   // 隙間の狭さ × 速さ の掛け算で点数化（最大100点）
   function pointsSlit(gap, crossMs) {
     return Math.max(1, Math.round(100 * (160 - gap) / 130 * (3400 - crossMs) / 3000));
   }
   function gapPx() { return parseInt(gapSlider.value, 10); }
-  function currentPoints() {
-    return mode === 'flash'
-      ? pointsFlash(parseInt(msSlider.value, 10))
-      : pointsSlit(gapPx(), parseInt(crossSlider.value, 10));
-  }
-
-  function refreshSettings() {
-    msLabel.textContent = msSlider.value;
-    ptsLabel.textContent = pointsFlash(parseInt(msSlider.value, 10));
-    gapLabel.textContent = gapSlider.value;
-    crossLabel.textContent = crossSlider.value;
-    crossPtsLabel.textContent = pointsSlit(gapPx(), parseInt(crossSlider.value, 10));
-  }
-  msSlider.addEventListener('input', refreshSettings);
-  crossSlider.addEventListener('input', refreshSettings);
-  gapSlider.addEventListener('input', () => { refreshSettings(); layoutDoors(); });
-  document.querySelectorAll('.preset').forEach(b => {
-    b.addEventListener('click', () => {
-      document.getElementById(b.dataset.target).value = b.dataset.ms;
-      refreshSettings();
-      layoutDoors();
-    });
-  });
-  refreshSettings();
+  function currentPoints() { return pointsSlit(gapPx(), parseInt(crossSlider.value, 10)); }
 
   function layoutDoors() {
     const w = stage.clientWidth;
@@ -268,19 +208,23 @@
     doorRight.style.width = doorW + 'px';
   }
   window.addEventListener('resize', layoutDoors);
-  layoutDoors();
 
-  function setMode(m) {
-    mode = m;
-    modeFlashBtn.classList.toggle('active', m === 'flash');
-    modeSlitBtn.classList.toggle('active', m === 'slit');
-    flashSettings.style.display = m === 'flash' ? '' : 'none';
-    slitSettings.style.display = m === 'slit' ? '' : 'none';
-    slitLayer.style.display = m === 'slit' ? 'block' : 'none';
-    if (m === 'slit') layoutDoors();
+  function refreshSettings() {
+    gapLabel.textContent = gapSlider.value;
+    crossLabel.textContent = crossSlider.value;
+    crossPtsLabel.textContent = currentPoints();
   }
-  modeFlashBtn.addEventListener('click', () => { if (!playing) setMode('flash'); });
-  modeSlitBtn.addEventListener('click', () => { if (!playing) setMode('slit'); });
+  gapSlider.addEventListener('input', () => { refreshSettings(); layoutDoors(); });
+  crossSlider.addEventListener('input', refreshSettings);
+  document.querySelectorAll('.preset').forEach(b => {
+    b.addEventListener('click', () => {
+      document.getElementById(b.dataset.target).value = b.dataset.ms;
+      refreshSettings();
+      layoutDoors();
+    });
+  });
+  refreshSettings();
+  layoutDoors();
 
   const FONTS = [
     '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif',
@@ -293,13 +237,11 @@
     'sans-serif',
     'monospace'
   ];
-  // ランダムな見た目を適用し、縦方向オフセットを返す
+  // ランダムな見た目を適用し、使う値を返す
   function randomizeCharStyle() {
     const font = FONTS[Math.floor(Math.random() * FONTS.length)];
     const size = 40 + Math.floor(Math.random() * 201); // 40〜240px
-    const rangeX = Math.max(30, 190 - size * 0.55);
     const rangeY = Math.max(15, 120 - size * 0.35);
-    const dx = Math.round((Math.random() * 2 - 1) * rangeX);
     const dy = Math.round((Math.random() * 2 - 1) * rangeY);
     const rot = (Math.random() * 20 - 10).toFixed(1);  // -10〜10度
     const sx = (0.8 + Math.random() * 0.4).toFixed(2);  // 横方向の歪み
@@ -309,7 +251,7 @@
     flashChar.style.fontFamily = font;
     flashChar.style.fontSize = size + 'px';
     flashChar.style.fontWeight = weight;
-    return { dx, dy, rot, sx, sy };
+    return { dy, rot, sx, sy };
   }
   function resetCharStyle() {
     flashChar.style.fontFamily = '';
@@ -344,19 +286,7 @@
     stageMsg.textContent = 'よーい…';
     setTimeout(() => {
       stageMsg.textContent = '';
-      if (mode === 'flash') {
-        flashChar.style.transform =
-          'translate(' + st.dx + 'px, ' + st.dy + 'px) rotate(' + st.rot + 'deg) scale(' + st.sx + ', ' + st.sy + ')';
-        flashChar.style.visibility = 'visible';
-        setTimeout(() => {
-          flashChar.style.visibility = 'hidden';
-          stageMsg.textContent = 'どっちだった？';
-          accepting = true;
-          setChoicesEnabled(true);
-        }, parseInt(msSlider.value, 10));
-      } else {
-        runSlit(st);
-      }
+      runSlit(st);
     }, 700);
   }
 
@@ -416,7 +346,7 @@
     flashChar.textContent = answer;
     flashChar.style.visibility = 'visible';
     setTimeout(() => {
-      if (mode === 'slit') slitLayer.style.display = 'block';
+      slitLayer.style.display = 'block';
       nextQuestion();
     }, 1400);
   }
@@ -432,7 +362,7 @@
     if (score >= 800) msg = '神の目！ほぼ見えてないはずなのに…';
     else if (score >= 500) msg = 'すごい！目が鍛えられてる。';
     else if (score >= 300) msg = 'いい線！もっと難しい設定で再挑戦しよう。';
-    else msg = 'まずはゆっくり設定で見分け方を覚えよう。';
+    else msg = 'まずは広く・ゆっくりの設定で見分け方を覚えよう。';
     stageMsg.innerHTML = '終了！ スコア ' + score + ' 点';
     feedback.innerHTML = msg;
     startBtn.textContent = 'もう一度遊ぶ';
@@ -454,8 +384,8 @@
     qNum.textContent = '-';
     resetCharStyle();
     flashChar.style.visibility = 'hidden';
-    slitLayer.style.display = mode === 'slit' ? 'block' : 'none';
-    if (mode === 'slit') layoutDoors();
+    slitLayer.style.display = 'block';
+    layoutDoors();
     let count = 3;
     stageMsg.style.fontSize = '3rem';
     stageMsg.textContent = count;
