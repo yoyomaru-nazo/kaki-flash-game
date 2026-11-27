@@ -111,6 +111,12 @@
   #feedback { min-height: 3.2em; margin: 14px 0 4px; font-size: 1rem; line-height: 1.6; text-align: center; }
   #feedback .ok { color: #7ddb96; font-weight: bold; }
   #feedback .ng { color: #ff8d84; font-weight: bold; }
+  #shareArea { text-align: center; margin-top: 6px; }
+  #shareBtn {
+    background: #000; color: #fff; font-weight: bold; font-size: 1rem;
+    border: 1px solid #555; border-radius: 999px; padding: 12px 26px; cursor: pointer;
+  }
+  #shareBtn:hover { background: #222; }
   .howto { max-width: 480px; margin-top: 18px; font-size: .88rem; color: #c9b18c; line-height: 1.7; }
   .howto .k { font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 1.15rem; color: #f5ead9; }
 </style>
@@ -163,6 +169,10 @@
     </div>
 
     <div id="feedback"></div>
+
+    <div id="shareArea" style="display:none">
+      <button id="shareBtn">𝕏 で結果を投稿する</button>
+    </div>
   </div>
 
   <div class="howto">
@@ -187,12 +197,25 @@
   const scoreEl = document.getElementById('score');
   const streakEl = document.getElementById('streak');
   const feedback = document.getElementById('feedback');
+  const shareArea = document.getElementById('shareArea');
+  const shareBtn = document.getElementById('shareBtn');
   const startBtn = document.getElementById('startBtn');
   const btnKaki = document.getElementById('btnKaki');
   const btnKokera = document.getElementById('btnKokera');
 
   let score = 0, streak = 0, current = 0, answer = null, playing = false, accepting = false;
   let animId = null;
+  let gameGap = 70, gameCross = 1500; // ゲーム開始時点の設定（シェア文用）
+
+  shareBtn.addEventListener('click', () => {
+    const text = '「柿か杮か？ 扉の隙間クイズ」で ' + score + '点だった！（隙間' + gameGap + 'px・横切り' + gameCross + 'ms設定）';
+    const params = new URLSearchParams({
+      text: text,
+      url: 'https://yoyomaru-nazo.github.io/kaki-flash-game/',
+      hashtags: '柿か杮か'
+    });
+    window.open('https://twitter.com/intent/tweet?' + params.toString(), '_blank');
+  });
 
   // 隙間の狭さ × 速さ の掛け算で点数化（最大100点）
   function pointsSlit(gap, crossMs) {
@@ -365,6 +388,7 @@
     else msg = 'まずは広く・ゆっくりの設定で見分け方を覚えよう。';
     stageMsg.innerHTML = '終了！ スコア ' + score + ' 点';
     feedback.innerHTML = msg;
+    shareArea.style.display = 'block';
     startBtn.textContent = 'もう一度遊ぶ';
     startBtn.disabled = false;
   }
@@ -376,6 +400,9 @@
     streakEl.textContent = '0';
     playing = true;
     accepting = false;
+    gameGap = gapPx();
+    gameCross = parseInt(crossSlider.value, 10);
+    shareArea.style.display = 'none';
     startBtn.disabled = true;
     startBtn.textContent = 'まもなく開始…';
     setChoicesEnabled(false);
