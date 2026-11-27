@@ -17,7 +17,7 @@
     padding: 20px 16px 40px;
   }
   h1 { font-size: 1.5rem; margin: 10px 0 4px; letter-spacing: .05em; }
-  .sub { color: #c9b18c; font-size: .9rem; margin-bottom: 18px; text-align: center; }
+  .sub { color: #c9b18c; font-size: .9rem; margin-bottom: 18px; text-align: center; line-height: 1.6; }
   .card {
     background: #2a2018;
     border: 1px solid #4a3826;
@@ -49,12 +49,28 @@
     visibility: hidden;
     user-select: none;
     display: inline-block;
+    z-index: 1;
   }
+  #slitLayer {
+    position: absolute; inset: 0;
+    display: none;
+    z-index: 2;
+    pointer-events: none;
+  }
+  #slitLayer .door {
+    position: absolute; top: 0; bottom: 0;
+    background: repeating-linear-gradient(90deg, #4a3421 0 26px, #41301e 26px 28px);
+    border-top: 10px solid #2e2013;
+    border-bottom: 10px solid #2e2013;
+  }
+  #slitLayer .door.left { left: 0; border-right: 4px solid #241a10; }
+  #slitLayer .door.right { right: 0; border-left: 4px solid #241a10; }
   #stageMsg {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 1.3rem; color: #8a6d3b; font-weight: bold;
     text-align: center; padding: 0 16px;
+    z-index: 3;
   }
   .choices { display: flex; gap: 12px; }
   .choice {
@@ -78,6 +94,13 @@
   #feedback .ok { color: #7ddb96; font-weight: bold; }
   #feedback .ng { color: #ff8d84; font-weight: bold; }
   .settings { margin-top: 8px; border-top: 1px solid #4a3826; padding-top: 16px; }
+  .modeToggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .modeBtn {
+    flex: 1; padding: 10px 0; font-size: .95rem; font-weight: bold;
+    background: #3a2c1e; color: #c9b18c; border: 2px solid #6b5136;
+    border-radius: 10px; cursor: pointer;
+  }
+  .modeBtn.active { background: #e8862e; color: #1a1410; border-color: #e8862e; }
   .settings label { display: block; font-size: .95rem; margin-bottom: 8px; }
   .settings label b { color: #ffb84d; }
   input[type=range] { width: 100%; accent-color: #e8862e; height: 32px; }
@@ -101,7 +124,7 @@
 </head>
 <body>
   <h1>柿か杮か？</h1>
-  <p class="sub">一瞬だけ表示される漢字を見分けるクイズ。全10問。<br>表示時間が短いほど高得点！</p>
+  <p class="sub">一瞬だけ見える漢字を見分けるクイズ。全10問。<br>難しい設定ほど高得点！</p>
 
   <div class="card">
     <div class="status">
@@ -112,6 +135,10 @@
 
     <div id="stage">
       <div id="flashChar">柿</div>
+      <div id="slitLayer">
+        <div class="door left"></div>
+        <div class="door right"></div>
+      </div>
       <div id="stageMsg">下の設定を決めて「ゲームスタート」</div>
     </div>
 
@@ -123,15 +150,44 @@
     <div id="feedback"></div>
 
     <div class="settings">
-      <label>表示時間： <b id="msLabel">500</b> ミリ秒（この設定だと正解で <b id="ptsLabel">80</b> 点）</label>
-      <input type="range" id="msSlider" min="50" max="2000" step="50" value="500">
-      <div class="presets">
-        <button class="preset" data-ms="100">激ムズ 100ms</button>
-        <button class="preset" data-ms="300">ムズい 300ms</button>
-        <button class="preset" data-ms="700">普通 700ms</button>
-        <button class="preset" data-ms="1500">ゆっくり 1500ms</button>
+      <div class="modeToggle">
+        <button class="modeBtn active" id="modeFlash">一瞬表示モード</button>
+        <button class="modeBtn" id="modeSlit">扉の隙間モード</button>
       </div>
-      <p class="scoreRule">得点ルール：正解すると「(2100 − 表示ミリ秒) ÷ 20」点（切り上げ）。100msなら100点、2000msなら5点。不正解は0点。途中で表示時間を変えてもOK。フォント・文字サイズ・表示位置は問題ごとにランダムで変わります。</p>
+
+      <div id="flashSettings">
+        <label>表示時間： <b id="msLabel">500</b> ミリ秒（この設定だと正解で <b id="ptsLabel">80</b> 点）</label>
+        <input type="range" id="msSlider" min="50" max="2000" step="50" value="500">
+        <div class="presets">
+          <button class="preset" data-target="msSlider" data-ms="100">激ムズ 100ms</button>
+          <button class="preset" data-target="msSlider" data-ms="300">ムズい 300ms</button>
+          <button class="preset" data-target="msSlider" data-ms="700">普通 700ms</button>
+          <button class="preset" data-target="msSlider" data-ms="1500">ゆっくり 1500ms</button>
+        </div>
+        <p class="scoreRule">得点ルール：正解すると「(2100 − 表示ミリ秒) ÷ 20」点（切り上げ）。100msなら100点、2000msなら5点。不正解は0点。</p>
+      </div>
+
+      <div id="slitSettings" style="display:none">
+        <label>扉の隙間の幅： <b id="gapLabel">70</b> px</label>
+        <input type="range" id="gapSlider" min="30" max="150" step="5" value="70">
+        <div class="presets">
+          <button class="preset" data-target="gapSlider" data-ms="30">激狭 30px</button>
+          <button class="preset" data-target="gapSlider" data-ms="50">狭い 50px</button>
+          <button class="preset" data-target="gapSlider" data-ms="70">普通 70px</button>
+          <button class="preset" data-target="gapSlider" data-ms="120">広い 120px</button>
+        </div>
+        <label style="margin-top:14px">通り抜ける速さ（横切り時間）： <b id="crossLabel">1500</b> ミリ秒</label>
+        <input type="range" id="crossSlider" min="400" max="3000" step="100" value="1500">
+        <div class="presets">
+          <button class="preset" data-target="crossSlider" data-ms="400">激速 400ms</button>
+          <button class="preset" data-target="crossSlider" data-ms="800">速い 800ms</button>
+          <button class="preset" data-target="crossSlider" data-ms="1500">普通 1500ms</button>
+          <button class="preset" data-target="crossSlider" data-ms="2500">ゆっくり 2500ms</button>
+        </div>
+        <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。</p>
+      </div>
+
+      <p class="scoreRule">共通：フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。途中で設定を変えてもOK。</p>
     </div>
 
     <button class="bigbtn" id="startBtn">ゲームスタート</button>
@@ -143,9 +199,23 @@
 
 <script>
   const TOTAL = 10;
-  const slider = document.getElementById('msSlider');
+
+  const stage = document.getElementById('stage');
+  const slitLayer = document.getElementById('slitLayer');
+  const doorLeft = slitLayer.querySelector('.door.left');
+  const doorRight = slitLayer.querySelector('.door.right');
+  const msSlider = document.getElementById('msSlider');
   const msLabel = document.getElementById('msLabel');
   const ptsLabel = document.getElementById('ptsLabel');
+  const crossSlider = document.getElementById('crossSlider');
+  const crossLabel = document.getElementById('crossLabel');
+  const crossPtsLabel = document.getElementById('crossPtsLabel');
+  const gapSlider = document.getElementById('gapSlider');
+  const gapLabel = document.getElementById('gapLabel');
+  const flashSettings = document.getElementById('flashSettings');
+  const slitSettings = document.getElementById('slitSettings');
+  const modeFlashBtn = document.getElementById('modeFlash');
+  const modeSlitBtn = document.getElementById('modeSlit');
   const flashChar = document.getElementById('flashChar');
   const stageMsg = document.getElementById('stageMsg');
   const qNum = document.getElementById('qNum');
@@ -156,44 +226,100 @@
   const btnKaki = document.getElementById('btnKaki');
   const btnKokera = document.getElementById('btnKokera');
 
+  let mode = 'flash'; // 'flash' | 'slit'
   let score = 0, streak = 0, current = 0, answer = null, playing = false, accepting = false;
+  let animId = null;
+
+  function pointsFlash(ms) { return Math.ceil((2100 - ms) / 20); }
+  // 隙間の狭さ × 速さ の掛け算で点数化（最大100点）
+  function pointsSlit(gap, crossMs) {
+    return Math.max(1, Math.round(100 * (160 - gap) / 130 * (3400 - crossMs) / 3000));
+  }
+  function gapPx() { return parseInt(gapSlider.value, 10); }
+  function currentPoints() {
+    return mode === 'flash'
+      ? pointsFlash(parseInt(msSlider.value, 10))
+      : pointsSlit(gapPx(), parseInt(crossSlider.value, 10));
+  }
+
+  function refreshSettings() {
+    msLabel.textContent = msSlider.value;
+    ptsLabel.textContent = pointsFlash(parseInt(msSlider.value, 10));
+    gapLabel.textContent = gapSlider.value;
+    crossLabel.textContent = crossSlider.value;
+    crossPtsLabel.textContent = pointsSlit(gapPx(), parseInt(crossSlider.value, 10));
+  }
+  msSlider.addEventListener('input', refreshSettings);
+  crossSlider.addEventListener('input', refreshSettings);
+  gapSlider.addEventListener('input', () => { refreshSettings(); layoutDoors(); });
+  document.querySelectorAll('.preset').forEach(b => {
+    b.addEventListener('click', () => {
+      document.getElementById(b.dataset.target).value = b.dataset.ms;
+      refreshSettings();
+      layoutDoors();
+    });
+  });
+  refreshSettings();
+
+  function layoutDoors() {
+    const w = stage.clientWidth;
+    const doorW = Math.max(0, (w - gapPx()) / 2);
+    doorLeft.style.width = doorW + 'px';
+    doorRight.style.width = doorW + 'px';
+  }
+  window.addEventListener('resize', layoutDoors);
+  layoutDoors();
+
+  function setMode(m) {
+    mode = m;
+    modeFlashBtn.classList.toggle('active', m === 'flash');
+    modeSlitBtn.classList.toggle('active', m === 'slit');
+    flashSettings.style.display = m === 'flash' ? '' : 'none';
+    slitSettings.style.display = m === 'slit' ? '' : 'none';
+    slitLayer.style.display = m === 'slit' ? 'block' : 'none';
+    if (m === 'slit') layoutDoors();
+  }
+  modeFlashBtn.addEventListener('click', () => { if (!playing) setMode('flash'); });
+  modeSlitBtn.addEventListener('click', () => { if (!playing) setMode('slit'); });
 
   const FONTS = [
     '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif',
     '"Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif',
     '"Noto Serif JP", serif',
     '"Noto Sans JP", sans-serif',
+    '"MS PMincho", "MS Mincho", serif',
+    '"MS PGothic", "MS Gothic", sans-serif',
     'serif',
-    'sans-serif'
+    'sans-serif',
+    'monospace'
   ];
+  // ランダムな見た目を適用し、縦方向オフセットを返す
   function randomizeCharStyle() {
     const font = FONTS[Math.floor(Math.random() * FONTS.length)];
-    const size = 90 + Math.floor(Math.random() * 101); // 90〜190px
-    const dx = Math.floor(Math.random() * 141) - 70;   // -70〜70px
-    const dy = Math.floor(Math.random() * 101) - 50;   // -50〜50px
-    const rot = (Math.random() * 8 - 4).toFixed(1);    // -4〜4度
+    const size = 40 + Math.floor(Math.random() * 201); // 40〜240px
+    const rangeX = Math.max(30, 190 - size * 0.55);
+    const rangeY = Math.max(15, 120 - size * 0.35);
+    const dx = Math.round((Math.random() * 2 - 1) * rangeX);
+    const dy = Math.round((Math.random() * 2 - 1) * rangeY);
+    const rot = (Math.random() * 20 - 10).toFixed(1);  // -10〜10度
+    const sx = (0.8 + Math.random() * 0.4).toFixed(2);  // 横方向の歪み
+    const sy = (0.8 + Math.random() * 0.4).toFixed(2);  // 縦方向の歪み
+    const weights = [100, 300, 400, 600, 900];
+    const weight = weights[Math.floor(Math.random() * weights.length)];
     flashChar.style.fontFamily = font;
     flashChar.style.fontSize = size + 'px';
-    flashChar.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) rotate(' + rot + 'deg)';
+    flashChar.style.fontWeight = weight;
+    return { dx, dy, rot, sx, sy };
   }
   function resetCharStyle() {
     flashChar.style.fontFamily = '';
     flashChar.style.fontSize = '150px';
+    flashChar.style.fontWeight = '';
     flashChar.style.transform = '';
+    flashChar.style.position = '';
+    flashChar.style.left = '';
+    flashChar.style.top = '';
   }
-
-  function pointsFor(ms) { return Math.ceil((2100 - ms) / 20); }
-  function currentMs() { return parseInt(slider.value, 10); }
-
-  function refreshSetting() {
-    msLabel.textContent = currentMs();
-    ptsLabel.textContent = pointsFor(currentMs());
-  }
-  slider.addEventListener('input', refreshSetting);
-  document.querySelectorAll('.preset').forEach(b => {
-    b.addEventListener('click', () => { slider.value = b.dataset.ms; refreshSetting(); });
-  });
-  refreshSetting();
 
   function setChoicesEnabled(on) {
     btnKaki.disabled = !on;
@@ -213,19 +339,55 @@
     feedback.innerHTML = '';
     answer = Math.random() < 0.5 ? '柿' : '杮';
     flashChar.textContent = answer;
-    randomizeCharStyle();
-    stageMsg.textContent = 'よーい…';
+    const st = randomizeCharStyle();
     flashChar.style.visibility = 'hidden';
+    stageMsg.textContent = 'よーい…';
     setTimeout(() => {
       stageMsg.textContent = '';
-      flashChar.style.visibility = 'visible';
-      setTimeout(() => {
+      if (mode === 'flash') {
+        flashChar.style.transform =
+          'translate(' + st.dx + 'px, ' + st.dy + 'px) rotate(' + st.rot + 'deg) scale(' + st.sx + ', ' + st.sy + ')';
+        flashChar.style.visibility = 'visible';
+        setTimeout(() => {
+          flashChar.style.visibility = 'hidden';
+          stageMsg.textContent = 'どっちだった？';
+          accepting = true;
+          setChoicesEnabled(true);
+        }, parseInt(msSlider.value, 10));
+      } else {
+        runSlit(st);
+      }
+    }, 700);
+  }
+
+  function runSlit(st) {
+    layoutDoors();
+    const stageW = stage.clientWidth;
+    const size = parseInt(flashChar.style.fontSize, 10) || 150;
+    const startX = stageW + 30;
+    const endX = -size - 30;
+    const dur = parseInt(crossSlider.value, 10);
+    const t0 = performance.now();
+    flashChar.style.position = 'absolute';
+    flashChar.style.top = 'calc(50% + ' + st.dy + 'px)';
+    flashChar.style.transform =
+      'translateY(-50%) rotate(' + st.rot + 'deg) scale(' + st.sx + ', ' + st.sy + ')';
+    flashChar.style.left = startX + 'px';
+    flashChar.style.visibility = 'visible';
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / dur);
+      flashChar.style.left = (startX + (endX - startX) * t) + 'px';
+      if (t < 1) {
+        animId = requestAnimationFrame(frame);
+      } else {
+        animId = null;
         flashChar.style.visibility = 'hidden';
         stageMsg.textContent = 'どっちだった？';
         accepting = true;
         setChoicesEnabled(true);
-      }, currentMs());
-    }, 700);
+      }
+    }
+    animId = requestAnimationFrame(frame);
   }
 
   function choose(pick) {
@@ -236,7 +398,7 @@
     const pickedBtn = pick === '柿' ? btnKaki : btnKokera;
     correctBtn.classList.add('correct');
     if (pick === answer) {
-      const pts = pointsFor(currentMs());
+      const pts = currentPoints();
       score += pts; streak++;
       scoreEl.textContent = score;
       streakEl.textContent = streak;
@@ -247,11 +409,16 @@
       streakEl.textContent = streak;
       feedback.innerHTML = '<span class="ng">残念…</span>正解は「' + answer + '」でした。上の部分をよく見て！';
     }
+    // 答え合わせは扉なし・中央・大サイズで見やすく表示
     stageMsg.textContent = '';
+    slitLayer.style.display = 'none';
     resetCharStyle();
     flashChar.textContent = answer;
     flashChar.style.visibility = 'visible';
-    setTimeout(nextQuestion, 1400);
+    setTimeout(() => {
+      if (mode === 'slit') slitLayer.style.display = 'block';
+      nextQuestion();
+    }, 1400);
   }
   btnKaki.addEventListener('click', () => choose('柿'));
   btnKokera.addEventListener('click', () => choose('杮'));
@@ -264,7 +431,7 @@
     let msg;
     if (score >= 800) msg = '神の目！ほぼ見えてないはずなのに…';
     else if (score >= 500) msg = 'すごい！目が鍛えられてる。';
-    else if (score >= 300) msg = 'いい線！表示時間を短くして再挑戦しよう。';
+    else if (score >= 300) msg = 'いい線！もっと難しい設定で再挑戦しよう。';
     else msg = 'まずはゆっくり設定で見分け方を覚えよう。';
     stageMsg.innerHTML = '終了！ スコア ' + score + ' 点';
     feedback.innerHTML = msg;
@@ -273,10 +440,12 @@
   }
 
   startBtn.addEventListener('click', () => {
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
     score = 0; streak = 0; current = 0;
     scoreEl.textContent = '0';
     streakEl.textContent = '0';
     playing = true;
+    accepting = false;
     startBtn.disabled = true;
     startBtn.textContent = 'まもなく開始…';
     setChoicesEnabled(false);
@@ -285,6 +454,8 @@
     qNum.textContent = '-';
     resetCharStyle();
     flashChar.style.visibility = 'hidden';
+    slitLayer.style.display = mode === 'slit' ? 'block' : 'none';
+    if (mode === 'slit') layoutDoors();
     let count = 3;
     stageMsg.style.fontSize = '3rem';
     stageMsg.textContent = count;
