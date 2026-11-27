@@ -149,7 +149,7 @@
         <button class="preset" data-target="crossSlider" data-ms="1500">普通 1500ms</button>
         <button class="preset" data-target="crossSlider" data-ms="2500">ゆっくり 2500ms</button>
       </div>
-      <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。</p>
+      <p class="scoreRule">この設定だと正解で <b id="crossPtsLabel">44</b> 点。得点は「隙間の狭さ × 速さ」の掛け算で決まります：100 ×（160 − 隙間px）÷ 130 ×（3400 − 横切りms）÷ 3000（四捨五入、最低1点）。一番難しい設定（隙間30px・400ms）で100点です。連続正解ボーナス：2連続目から（連続数 − 1）× 5 点が加算されます（10連続全問正解ならボーナス合計225点）。フォント・文字サイズ（40〜240px）・表示位置・傾き・太さ・縦横比は問題ごとに大きくランダムで変わります。</p>
     </div>
 
     <button class="bigbtn" id="startBtn">ゲームスタート</button>
@@ -203,12 +203,12 @@
   const btnKaki = document.getElementById('btnKaki');
   const btnKokera = document.getElementById('btnKokera');
 
-  let score = 0, streak = 0, current = 0, answer = null, playing = false, accepting = false;
+  let score = 0, streak = 0, maxStreak = 0, current = 0, answer = null, playing = false, accepting = false;
   let animId = null;
   let gameGap = 70, gameCross = 1500; // ゲーム開始時点の設定（シェア文用）
 
   shareBtn.addEventListener('click', () => {
-    const text = '「柿か杮か？ 扉の隙間クイズ」で ' + score + '点だった！（隙間' + gameGap + 'px・横切り' + gameCross + 'ms設定）';
+    const text = '「柿か杮か？ 扉の隙間クイズ」で ' + score + '点だった！（隙間' + gameGap + 'px・横切り' + gameCross + 'ms設定、最大' + maxStreak + '連続正解）';
     const params = new URLSearchParams({
       text: text,
       url: 'https://yoyomaru-nazo.github.io/kaki-flash-game/',
@@ -351,11 +351,16 @@
     const pickedBtn = pick === '柿' ? btnKaki : btnKokera;
     correctBtn.classList.add('correct');
     if (pick === answer) {
-      const pts = currentPoints();
-      score += pts; streak++;
+      streak++;
+      if (streak > maxStreak) maxStreak = streak;
+      const base = currentPoints();
+      const bonus = (streak - 1) * 5; // 連続正解ボーナス
+      const pts = base + bonus;
+      score += pts;
       scoreEl.textContent = score;
       streakEl.textContent = streak;
-      feedback.innerHTML = '<span class="ok">正解！</span>「' + answer + '」でした。+' + pts + '点';
+      feedback.innerHTML = '<span class="ok">正解！</span>「' + answer + '」でした。+' + pts + '点' +
+        (bonus > 0 ? '（基本' + base + '点＋連続ボーナス' + bonus + '点）' : '');
     } else {
       pickedBtn.classList.add('wrong');
       streak = 0;
@@ -387,7 +392,7 @@
     else if (score >= 300) msg = 'いい線！もっと難しい設定で再挑戦しよう。';
     else msg = 'まずは広く・ゆっくりの設定で見分け方を覚えよう。';
     stageMsg.innerHTML = '終了！ スコア ' + score + ' 点';
-    feedback.innerHTML = msg;
+    feedback.innerHTML = msg + '<br>最大連続正解：' + maxStreak + ' 連続';
     shareArea.style.display = 'block';
     startBtn.textContent = 'もう一度遊ぶ';
     startBtn.disabled = false;
@@ -395,7 +400,7 @@
 
   startBtn.addEventListener('click', () => {
     if (animId) { cancelAnimationFrame(animId); animId = null; }
-    score = 0; streak = 0; current = 0;
+    score = 0; streak = 0; maxStreak = 0; current = 0;
     scoreEl.textContent = '0';
     streakEl.textContent = '0';
     playing = true;
