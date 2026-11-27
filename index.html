@@ -48,6 +48,7 @@
     line-height: 1;
     visibility: hidden;
     user-select: none;
+    display: inline-block;
   }
   #stageMsg {
     position: absolute; inset: 0;
@@ -130,7 +131,7 @@
         <button class="preset" data-ms="700">普通 700ms</button>
         <button class="preset" data-ms="1500">ゆっくり 1500ms</button>
       </div>
-      <p class="scoreRule">得点ルール：正解すると「(2100 − 表示ミリ秒) ÷ 20」点（切り上げ）。100msなら100点、2000msなら5点。不正解は0点。途中で表示時間を変えてもOK。</p>
+      <p class="scoreRule">得点ルール：正解すると「(2100 − 表示ミリ秒) ÷ 20」点（切り上げ）。100msなら100点、2000msなら5点。不正解は0点。途中で表示時間を変えてもOK。フォント・文字サイズ・表示位置は問題ごとにランダムで変わります。</p>
     </div>
 
     <button class="bigbtn" id="startBtn">ゲームスタート</button>
@@ -156,6 +157,30 @@
   const btnKokera = document.getElementById('btnKokera');
 
   let score = 0, streak = 0, current = 0, answer = null, playing = false, accepting = false;
+
+  const FONTS = [
+    '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif',
+    '"Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif',
+    '"Noto Serif JP", serif',
+    '"Noto Sans JP", sans-serif',
+    'serif',
+    'sans-serif'
+  ];
+  function randomizeCharStyle() {
+    const font = FONTS[Math.floor(Math.random() * FONTS.length)];
+    const size = 90 + Math.floor(Math.random() * 101); // 90〜190px
+    const dx = Math.floor(Math.random() * 141) - 70;   // -70〜70px
+    const dy = Math.floor(Math.random() * 101) - 50;   // -50〜50px
+    const rot = (Math.random() * 8 - 4).toFixed(1);    // -4〜4度
+    flashChar.style.fontFamily = font;
+    flashChar.style.fontSize = size + 'px';
+    flashChar.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) rotate(' + rot + 'deg)';
+  }
+  function resetCharStyle() {
+    flashChar.style.fontFamily = '';
+    flashChar.style.fontSize = '150px';
+    flashChar.style.transform = '';
+  }
 
   function pointsFor(ms) { return Math.ceil((2100 - ms) / 20); }
   function currentMs() { return parseInt(slider.value, 10); }
@@ -188,6 +213,7 @@
     feedback.innerHTML = '';
     answer = Math.random() < 0.5 ? '柿' : '杮';
     flashChar.textContent = answer;
+    randomizeCharStyle();
     stageMsg.textContent = 'よーい…';
     flashChar.style.visibility = 'hidden';
     setTimeout(() => {
@@ -222,6 +248,7 @@
       feedback.innerHTML = '<span class="ng">残念…</span>正解は「' + answer + '」でした。上の部分をよく見て！';
     }
     stageMsg.textContent = '';
+    resetCharStyle();
     flashChar.textContent = answer;
     flashChar.style.visibility = 'visible';
     setTimeout(nextQuestion, 1400);
@@ -251,8 +278,27 @@
     streakEl.textContent = '0';
     playing = true;
     startBtn.disabled = true;
-    startBtn.textContent = 'プレイ中…';
-    nextQuestion();
+    startBtn.textContent = 'まもなく開始…';
+    setChoicesEnabled(false);
+    clearChoiceMarks();
+    feedback.innerHTML = '';
+    qNum.textContent = '-';
+    resetCharStyle();
+    flashChar.style.visibility = 'hidden';
+    let count = 3;
+    stageMsg.style.fontSize = '3rem';
+    stageMsg.textContent = count;
+    const timer = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(timer);
+        stageMsg.style.fontSize = '';
+        startBtn.textContent = 'プレイ中…';
+        nextQuestion();
+      } else {
+        stageMsg.textContent = count;
+      }
+    }, 700);
   });
 </script>
 </body>
